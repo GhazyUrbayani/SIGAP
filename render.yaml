@@ -12,11 +12,6 @@ services:
         fromDatabase:
           name: sigap-db
           property: connectionString
-      - key: REDIS_URL
-        fromService:
-          name: sigap-redis
-          type: redis
-          property: connectionString
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: BMKG_API_URL
@@ -27,14 +22,11 @@ services:
         value: "false"
       - key: CORS_ORIGINS
         value: https://sigap-frontend.onrender.com,http://localhost:5173
-      - key: VITE_AZURE_MAPS_KEY
-        sync: false
 
-  # ─── FRONTEND ─────────────────────────────────
+  # ─── FRONTEND (Static Site — always free) ─────
   - type: web
     name: sigap-frontend
     runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
