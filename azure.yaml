@@ -17,10 +17,7 @@ services:
     hooks:
       prepackage:
         shell: sh
-        run: |
-          export VITE_API_URL="https://$BACKEND_URI"
-          npm install
-          npm run build
+        run: echo "VITE_API_URL=https://$BACKEND_URI" > .env.production
         interactive: false
 
 hooks:
