@@ -1,0 +1,20 @@
+name: sigap
+
+services:
+  backend:
+    project: ./backend
+    language: python
+    host: appservice
+
+  frontend:
+    project: ./frontend
+    language: js
+    host: staticwebapp
+
+hooks:
+  postdeploy:
+    shell: sh
+    run: |
+      cd backend
+      python -m alembic upgrade head
+    interactive: false
