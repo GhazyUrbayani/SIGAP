@@ -14,6 +14,11 @@ services:
     language: js
     host: staticwebapp
     dist: dist
+    hooks:
+      prepackage:
+        shell: sh
+        run: npm install && npm run build
+        interactive: false
 
 hooks:
   postprovision:
