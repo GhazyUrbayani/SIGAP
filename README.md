@@ -1,4 +1,4 @@
-# SIGAP — Sistem Intelijen Geospasial Ancaman Perkotaan
+# SIGAP (Sistem Intelijen Geospasial Ancaman Perkotaan)
 
 **Smart Integrated Geo-Analytics for Urban Pressure**
 
