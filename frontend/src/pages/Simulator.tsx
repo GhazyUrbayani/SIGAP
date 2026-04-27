@@ -12,7 +12,7 @@ import {
 import { Header } from '../components/layout/Header';
 import { useUSSLatest } from '../hooks/useUSS';
 import api from '../lib/api';
-import type { ScenarioResponse, ProjectionPoint } from '../types/uss';
+import type { ScenarioResponse } from '../types/uss';
 
 export default function Simulator() {
   const { data: ussData } = useUSSLatest();

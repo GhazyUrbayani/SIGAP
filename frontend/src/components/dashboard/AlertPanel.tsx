@@ -1,4 +1,3 @@
-import { getZoneColor, getZoneLabel } from '../../lib/colors';
 import { formatRelativeTime } from '../../lib/formatters';
 import type { AlertItem } from '../../types/auth';
 

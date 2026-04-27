@@ -1,4 +1,4 @@
-import { getZoneColor, getZoneBgColor, getZoneLabel } from '../../lib/colors';
+import { getZoneColor } from '../../lib/colors';
 import type { USSLatestItem } from '../../types/uss';
 
 interface ChoroplethMapProps {

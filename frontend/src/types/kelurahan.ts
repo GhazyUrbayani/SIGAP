@@ -1,3 +1,8 @@
+export interface GeoJSONGeometry {
+  type: string;
+  coordinates: number[] | number[][] | number[][][] | number[][][][];
+}
+
 export interface KelurahanFeature {
   type: 'Feature';
   properties: {
@@ -14,7 +19,7 @@ export interface KelurahanFeature {
     socioeconomic_score: number | null;
     computed_at: string | null;
   };
-  geometry: GeoJSON.Geometry;
+  geometry: GeoJSONGeometry;
 }
 
 export interface KelurahanGeoJSON {
