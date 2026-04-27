@@ -42,8 +42,15 @@ jobs:
 
       - name: Log in with Azure (credentials)
         if: ${{ env.AZURE_CLIENT_ID == '' }}
+        env:
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         run: |
-          echo "${{ secrets.AZURE_CREDENTIALS }}" | azd auth login --cred-stdin
+          CLIENT_ID=$(echo $AZURE_CREDENTIALS | jq -r .clientId)
+          CLIENT_SECRET=$(echo $AZURE_CREDENTIALS | jq -r .clientSecret)
+          TENANT_ID=$(echo $AZURE_CREDENTIALS | jq -r .tenantId)
+          SUBSCRIPTION_ID=$(echo $AZURE_CREDENTIALS | jq -r .subscriptionId)
+          azd auth login --client-id "$CLIENT_ID" --client-secret "$CLIENT_SECRET" --tenant-id "$TENANT_ID"
+          echo "AZURE_SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> $GITHUB_ENV
         shell: bash
 
       - name: Provision & Deploy
