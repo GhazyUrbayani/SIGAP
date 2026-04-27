@@ -8,14 +8,17 @@ import asyncio
 import uuid
 from datetime import datetime, timezone
 
-from geoalchemy2 import WKTElement
 from passlib.context import CryptContext
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session_factory, engine
-from app.models.kelurahan import Kelurahan
+from app.models.kelurahan import Kelurahan, HAS_POSTGIS
 from app.models.user import User
+
+# PostGIS WKTElement — only if geoalchemy2 is installed
+if HAS_POSTGIS:
+    from geoalchemy2 import WKTElement
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -114,6 +117,14 @@ async def seed():
 
         # Seed kelurahan
         for k in KELURAHAN_DATA:
+            if HAS_POSTGIS:
+                geom = WKTElement(k["polygon_wkt"], srid=4326)
+                cent = WKTElement(k["centroid_wkt"], srid=4326)
+            else:
+                # Store as plain WKT text when PostGIS is unavailable
+                geom = k["polygon_wkt"]
+                cent = k["centroid_wkt"]
+
             kel = Kelurahan(
                 kode_bps=k["kode_bps"],
                 nama=k["nama"],
@@ -122,8 +133,8 @@ async def seed():
                 provinsi=k["provinsi"],
                 luas_km2=k["luas_km2"],
                 populasi=k["populasi"],
-                geometry=WKTElement(k["polygon_wkt"], srid=4326),
-                centroid=WKTElement(k["centroid_wkt"], srid=4326),
+                geometry=geom,
+                centroid=cent,
             )
             db.add(kel)
 

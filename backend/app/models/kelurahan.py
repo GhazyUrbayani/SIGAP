@@ -1,14 +1,20 @@
-"""Kelurahan ORM model with PostGIS geometry."""
+"""Kelurahan ORM model with optional PostGIS geometry."""
 
 import uuid
 from datetime import datetime
 
-from geoalchemy2 import Geometry
-from sqlalchemy import DateTime, Integer, Numeric, String, func, Index
+from sqlalchemy import DateTime, Integer, Numeric, String, Text, func, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+# PostGIS support is optional — Render free tier doesn't have PostGIS
+try:
+    from geoalchemy2 import Geometry
+    HAS_POSTGIS = True
+except ImportError:
+    HAS_POSTGIS = False
 
 
 class Kelurahan(Base):
@@ -22,8 +28,15 @@ class Kelurahan(Base):
     kecamatan: Mapped[str] = mapped_column(String(255), nullable=False)
     kota: Mapped[str] = mapped_column(String(255), nullable=False)
     provinsi: Mapped[str] = mapped_column(String(255), nullable=False)
-    geometry = mapped_column(Geometry("MULTIPOLYGON", srid=4326), nullable=True)
-    centroid = mapped_column(Geometry("POINT", srid=4326), nullable=True)
+
+    # Geometry columns — use PostGIS Geometry if available, else Text fallback
+    if HAS_POSTGIS:
+        geometry = mapped_column(Geometry("MULTIPOLYGON", srid=4326), nullable=True)
+        centroid = mapped_column(Geometry("POINT", srid=4326), nullable=True)
+    else:
+        geometry = mapped_column(Text, nullable=True)
+        centroid = mapped_column(Text, nullable=True)
+
     luas_km2: Mapped[float] = mapped_column(Numeric(10, 4), nullable=True)
     populasi: Mapped[int] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -5,21 +5,22 @@ from typing import Annotated, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from geoalchemy2.functions import ST_AsGeoJSON, ST_X, ST_Y
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models.kelurahan import Kelurahan
+from app.models.kelurahan import Kelurahan, HAS_POSTGIS
 from app.models.uss_score import USSScore
 from app.models.user import User
 from app.schemas.kelurahan import (
     KelurahanDetailResponse,
-    KelurahanGeoJSONCollection,
-    KelurahanGeoJSONFeature,
     KelurahanResponse,
 )
+
+# PostGIS functions — only available if geoalchemy2 is installed
+if HAS_POSTGIS:
+    from geoalchemy2.functions import ST_AsGeoJSON
 
 router = APIRouter(prefix="/kelurahan", tags=["kelurahan"])
 
@@ -122,21 +123,30 @@ async def get_geojson(
         .subquery("latest_uss")
     )
 
-    query = select(
+    # Build query — use ST_AsGeoJSON if PostGIS available, else raw text
+    columns = [
         Kelurahan.id,
         Kelurahan.nama,
         Kelurahan.kecamatan,
         Kelurahan.kota,
         Kelurahan.populasi,
         Kelurahan.luas_km2,
-        ST_AsGeoJSON(Kelurahan.geometry).label("geojson"),
         latest_uss.c.uss,
         latest_uss.c.uss_level,
         latest_uss.c.climate_score,
         latest_uss.c.infrastructure_score,
         latest_uss.c.socioeconomic_score,
         latest_uss.c.computed_at,
-    ).outerjoin(latest_uss, Kelurahan.id == latest_uss.c.kelurahan_id)
+    ]
+
+    if HAS_POSTGIS:
+        columns.append(ST_AsGeoJSON(Kelurahan.geometry).label("geojson"))
+    else:
+        columns.append(Kelurahan.geometry.label("geojson"))
+
+    query = select(*columns).outerjoin(
+        latest_uss, Kelurahan.id == latest_uss.c.kelurahan_id
+    )
 
     if kota:
         query = query.where(Kelurahan.kota == kota)
@@ -148,8 +158,9 @@ async def get_geojson(
 
     features = []
     for row in rows:
-        if row.geojson:
-            geom = json.loads(row.geojson)
+        geojson_str = row.geojson
+        if geojson_str:
+            geom = json.loads(geojson_str) if isinstance(geojson_str, str) else geojson_str
             features.append({
                 "type": "Feature",
                 "properties": {

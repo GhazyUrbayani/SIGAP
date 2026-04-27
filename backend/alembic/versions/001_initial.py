@@ -1,4 +1,4 @@
-"""Initial migration — all tables with PostGIS.
+"""Initial migration — all tables (PostGIS optional).
 
 Revision ID: 001_initial
 Revises: None
@@ -8,8 +8,14 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-import geoalchemy2
 from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+# PostGIS is optional
+try:
+    import geoalchemy2
+    HAS_POSTGIS = True
+except ImportError:
+    HAS_POSTGIS = False
 
 revision: str = "001_initial"
 down_revision: Union[str, None] = None
@@ -18,8 +24,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable PostGIS extension
-    op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
+    # Enable PostGIS extension if available
+    if HAS_POSTGIS:
+        op.execute("CREATE EXTENSION IF NOT EXISTS postgis")
 
     # Users table
     op.create_table(
@@ -34,21 +41,30 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
-    # Kelurahan table
-    op.create_table(
-        "kelurahan",
+    # Kelurahan table — geometry columns use PostGIS or Text fallback
+    kelurahan_columns = [
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
         sa.Column("kode_bps", sa.String(20), unique=True, nullable=False),
         sa.Column("nama", sa.String(255), nullable=False),
         sa.Column("kecamatan", sa.String(255), nullable=False),
         sa.Column("kota", sa.String(255), nullable=False),
         sa.Column("provinsi", sa.String(255), nullable=False),
-        sa.Column("geometry", geoalchemy2.Geometry("MULTIPOLYGON", srid=4326), nullable=True),
-        sa.Column("centroid", geoalchemy2.Geometry("POINT", srid=4326), nullable=True),
+    ]
+
+    if HAS_POSTGIS:
+        kelurahan_columns.append(sa.Column("geometry", geoalchemy2.Geometry("MULTIPOLYGON", srid=4326), nullable=True))
+        kelurahan_columns.append(sa.Column("centroid", geoalchemy2.Geometry("POINT", srid=4326), nullable=True))
+    else:
+        kelurahan_columns.append(sa.Column("geometry", sa.Text(), nullable=True))
+        kelurahan_columns.append(sa.Column("centroid", sa.Text(), nullable=True))
+
+    kelurahan_columns.extend([
         sa.Column("luas_km2", sa.Numeric(10, 4), nullable=True),
         sa.Column("populasi", sa.Integer(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
+    ])
+
+    op.create_table("kelurahan", *kelurahan_columns)
     op.create_index("idx_kelurahan_kota", "kelurahan", ["kota"])
 
     # Indicators table
