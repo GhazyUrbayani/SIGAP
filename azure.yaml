@@ -1,5 +1,8 @@
 name: sigap
 
+metadata:
+  template: sigap@0.0.1
+
 services:
   backend:
     project: ./backend
@@ -12,9 +15,18 @@ services:
     host: staticwebapp
 
 hooks:
+  postprovision:
+    shell: sh
+    run: |
+      echo "Post-provision: configuring app settings..."
+    interactive: false
   postdeploy:
     shell: sh
     run: |
       cd backend
       python -m alembic upgrade head
+      python -m scripts.seed_kelurahan
+      python -m scripts.seed_dummy_indicators
+      python -m scripts.run_initial_uss
     interactive: false
+    continueOnError: true
