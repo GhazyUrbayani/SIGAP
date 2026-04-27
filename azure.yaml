@@ -13,6 +13,7 @@ services:
     project: ./frontend
     language: js
     host: staticwebapp
+    dist: dist
 
 hooks:
   postprovision:
