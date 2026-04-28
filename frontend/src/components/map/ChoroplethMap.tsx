@@ -16,12 +16,85 @@ interface ChoroplethMapProps {
   onSelect: (item: USSLatestItem) => void;
 }
 
+const getPointCoordinate = (feature: any): [number, number] | null => {
+  const centroid = feature?.properties?.centroid;
+  if (Array.isArray(centroid) && centroid.length === 2) {
+    return centroid as [number, number];
+  }
+
+  const geometry = feature?.geometry;
+  if (!geometry || !geometry.coordinates) return null;
+
+  if (geometry.type === 'Point') {
+    return geometry.coordinates as [number, number];
+  }
+
+  if (geometry.type === 'Polygon') {
+    return geometry.coordinates?.[0]?.[0] ?? null;
+  }
+
+  if (geometry.type === 'MultiPolygon') {
+    return geometry.coordinates?.[0]?.[0]?.[0] ?? null;
+  }
+
+  return null;
+};
+
 export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: ChoroplethMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const sourceRef = useRef<any>(null);
   const pointSourceRef = useRef<any>(null);
   const lineLayerRef = useRef<any>(null);
+  const mapReadyRef = useRef(false);
+  const geojsonRef = useRef<KelurahanGeoJSON | null>(null);
+
+  const syncGeojsonToMap = () => {
+    const map = mapInstance.current;
+    const source = sourceRef.current;
+    const pointSource = pointSourceRef.current;
+    const data = geojsonRef.current;
+
+    if (!map || !source || !pointSource || !data) return;
+
+    source.clear();
+    source.add(data);
+
+    pointSource.clear();
+    const pointFeatures = data.features
+      .map((f: any) => {
+        const coordinates = getPointCoordinate(f);
+        if (!coordinates) return null;
+
+        return {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates
+          },
+          properties: f.properties
+        };
+      })
+      .filter(Boolean);
+
+    if (pointFeatures.length > 0) {
+      pointSource.add(pointFeatures);
+    }
+
+    try {
+      map.setCamera({
+        bounds: window.atlas.data.BoundingBox.fromData(data),
+        padding: 60,
+        type: 'jump'
+      });
+    } catch (err) {
+      map.setCamera({
+        center: [107.6191, -6.9175],
+        zoom: 12,
+        type: 'jump'
+      });
+    }
+  };
 
   useEffect(() => {
     let timeoutId: number;
@@ -77,7 +150,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       // 2. Heatmap Layer - Exponential Weight for better variance
       const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
-        weight: ['pow', ['get', 'uss'], 1.5], // Exponential scaling to show big difference between scores
+        weight: ['pow', ['max', 0, ['coalesce', ['get', 'uss'], 0]], 1.5],
         radius: 40,
         opacity: 0.8,
         color: [
@@ -106,6 +179,10 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       map.events.add('click', polygonLayer, (e: any) => {
         if (e.shapes && e.shapes.length > 0) {
           const prop = e.shapes[0].getProperties();
+          const featureCenter = geojsonRef.current?.features.find(
+            (f: any) => f.properties.id === prop.id
+          );
+          const center = featureCenter ? getPointCoordinate(featureCenter) : null;
           const item = {
             kelurahan_id: prop.id,
             nama: prop.nama,
@@ -119,9 +196,9 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
           onSelect(item as any);
           
           // Also zoom to it locally
-          if (prop.centroid) {
+          if (center || prop.centroid) {
             map.setCamera({
-              center: prop.centroid,
+              center: center || prop.centroid,
               zoom: 15,
               type: 'fly',
               duration: 1000
@@ -130,24 +207,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         }
       });
 
-      if (geojson) {
-        source.add(geojson);
-        const pointFeatures = geojson.features.map((f: any) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: f.properties.centroid || f.geometry.coordinates[0][0][0]
-          },
-          properties: f.properties
-        }));
-        pointSource.add(pointFeatures);
-
-        map.setCamera({
-          bounds: window.atlas.data.BoundingBox.fromData(geojson),
-          padding: 80,
-          type: 'jump'
-        });
-      }
+      mapReadyRef.current = true;
+      syncGeojsonToMap();
     });
     };
 
@@ -162,6 +223,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       sourceRef.current = null;
       pointSourceRef.current = null;
       lineLayerRef.current = null;
+      mapReadyRef.current = false;
     };
   }, [loading]); // Re-run when loading state changes to detect mapRef container
 
@@ -169,9 +231,10 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
   useEffect(() => {
     if (mapInstance.current && selectedId && geojson) {
       const selectedFeature = geojson.features.find((f: any) => f.properties.id === selectedId);
-      if (selectedFeature && selectedFeature.properties.centroid) {
+      const center = selectedFeature ? getPointCoordinate(selectedFeature) : null;
+      if (center) {
         mapInstance.current.setCamera({
-          center: selectedFeature.properties.centroid,
+          center,
           zoom: 15,
           type: 'fly',
           duration: 1000
@@ -182,25 +245,9 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
   // Update data when geojson changes
   useEffect(() => {
-    if (sourceRef.current && pointSourceRef.current && geojson && mapInstance.current) {
-      sourceRef.current.clear();
-      sourceRef.current.add(geojson);
-
-      pointSourceRef.current.clear();
-      const pointFeatures = geojson.features.map((f: any) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: f.properties.centroid || f.geometry.coordinates[0][0][0]
-        },
-        properties: f.properties
-      }));
-      pointSourceRef.current.add(pointFeatures);
-
-      mapInstance.current.setCamera({
-        bounds: window.atlas.data.BoundingBox.fromData(geojson),
-        padding: 60
-      });
+    geojsonRef.current = geojson;
+    if (mapReadyRef.current) {
+      syncGeojsonToMap();
     }
   }, [geojson]);
 
