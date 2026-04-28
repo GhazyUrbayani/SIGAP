@@ -3,9 +3,17 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
+import ssl
 from app.config import get_settings
 
 settings = get_settings()
+
+connect_args = {}
+if settings.REQUIRE_SSL:
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ctx
 
 engine = create_async_engine(
     settings.DATABASE_URL,
@@ -13,6 +21,7 @@ engine = create_async_engine(
     pool_size=20,
     max_overflow=10,
     pool_pre_ping=True,
+    connect_args=connect_args,
 )
 
 async_session_factory = async_sessionmaker(

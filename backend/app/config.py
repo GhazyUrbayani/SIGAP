@@ -30,11 +30,24 @@ class Settings(BaseSettings):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
             if "postgresql://" in url and "+asyncpg" not in url:
                 url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
+            # Remove sslmode=require for asyncpg
+            if "?sslmode=require" in url:
+                url = url.replace("?sslmode=require", "")
+            elif "&sslmode=require" in url:
+                url = url.replace("&sslmode=require", "")
+            
             return url
         return (
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
+    @property
+    def REQUIRE_SSL(self) -> bool:
+        if self.DATABASE_URL_RAW and "sslmode=require" in self.DATABASE_URL_RAW.lower():
+            return True
+        return False
 
     @property
     def DATABASE_URL_SYNC(self) -> str:
