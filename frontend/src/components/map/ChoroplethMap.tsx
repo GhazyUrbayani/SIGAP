@@ -22,21 +22,34 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
   const sourceRef = useRef<any>(null);
 
   useEffect(() => {
-    // Only initialize map if container is ready and atlas SDK is loaded
-    if (!mapRef.current || !window.atlas || mapInstance.current) return;
+    let timeoutId: number;
+    let retries = 0;
 
-    // Initialize Azure Map
-    const map = new window.atlas.Map(mapRef.current, {
-      center: [107.6191, -6.9175], // Bandung center
-      zoom: 11,
-      style: 'grayscale_light', // Clean style to make choropleth stand out
-      authOptions: {
-        authType: 'subscriptionKey',
-        subscriptionKey: import.meta.env.VITE_AZURE_MAPS_KEY || '',
-      },
-    });
+    const initMap = () => {
+      if (!mapRef.current || mapInstance.current) return;
+      
+      if (!window.atlas) {
+        if (retries < 50) { // Try for up to 5 seconds
+          retries++;
+          timeoutId = window.setTimeout(initMap, 100);
+        } else {
+          console.error("Azure Maps SDK failed to load");
+        }
+        return;
+      }
 
-    mapInstance.current = map;
+      // Initialize Azure Map
+      const map = new window.atlas.Map(mapRef.current, {
+        center: [107.6191, -6.9175], // Bandung center
+        zoom: 11,
+        style: 'grayscale_light', // Clean style to make choropleth stand out
+        authOptions: {
+          authType: 'subscriptionKey',
+          subscriptionKey: import.meta.env.VITE_AZURE_MAPS_KEY || '',
+        },
+      });
+
+      mapInstance.current = map;
 
     map.events.add('ready', () => {
       // Add data source
@@ -109,9 +122,14 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       }
     });
 
+    initMap();
+    
     return () => {
-      map.dispose();
-      mapInstance.current = null;
+      if (timeoutId) clearTimeout(timeoutId);
+      if (mapInstance.current) {
+        mapInstance.current.dispose();
+        mapInstance.current = null;
+      }
       sourceRef.current = null;
     };
   }, []); // Run once on mount
