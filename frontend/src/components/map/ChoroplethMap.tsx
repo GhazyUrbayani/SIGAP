@@ -181,10 +181,11 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       pointSourceRef.current = pointSource;
 
       // 1. Polygon Layer (Choropleth) - Distinct Colors
+      const ussValue = ['to-number', ['coalesce', ['get', 'uss'], -1]];
       const polygonLayer = new window.atlas.layer.PolygonLayer(source, null, {
         fillColor: [
           'step',
-          ['get', 'uss'],
+          ussValue,
           '#EFEDE8',
           0, '#22C55E',  // Vibrant Green
           40, '#FACC15', // Vibrant Yellow
@@ -195,17 +196,18 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       // 2. Heatmap Layer - Exponential Weight for better variance
       const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
-        weight: ['pow', ['max', 0, ['to-number', ['coalesce', ['get', 'uss'], 0]]], 1.5],
-        radius: 40,
-        opacity: 0.8,
+        weight: ['interpolate', ['linear'], ussValue, 0, 0.2, 100, 1],
+        intensity: ['interpolate', ['linear'], ['zoom'], 10, 0.9, 14, 1.3, 16, 1.6],
+        radius: ['interpolate', ['linear'], ['zoom'], 10, 22, 12, 40, 14, 65],
+        opacity: 0.9,
         color: [
           'interpolate',
           ['linear'],
           ['heatmap-density'],
           0, 'rgba(0,0,0,0)',
-          0.2, 'rgba(34, 197, 94, 0.2)',  // Greenish glow for low
-          0.5, 'rgba(250, 204, 21, 0.5)', // Yellow glow for mid
-          0.8, 'rgba(239, 68, 68, 0.8)',  // Red glow for high
+          0.05, 'rgba(34, 197, 94, 0.35)',  // Greenish glow for low
+          0.45, 'rgba(250, 204, 21, 0.65)', // Yellow glow for mid
+          0.75, 'rgba(239, 68, 68, 0.85)',  // Red glow for high
           1, 'rgba(153, 27, 27, 1.0)'     // Dark red core for extreme
         ]
       });
@@ -317,7 +319,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
           strokeColor: [
             'case',
             ['==', ['get', 'id'], selectedId || ''],
-            ['step', ['get', 'uss'], '#E8E4DC', 0, '#75A58A', 40, '#D4A373', 70, '#B93A3A'],
+            ['step', ['to-number', ['coalesce', ['get', 'uss'], -1]], '#E8E4DC', 0, '#75A58A', 40, '#D4A373', 70, '#B93A3A'],
             '#E8E4DC'
           ],
           strokeWidth: [
