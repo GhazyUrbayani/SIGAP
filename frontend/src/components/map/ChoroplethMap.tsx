@@ -121,6 +121,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         });
       }
     });
+    };
 
     initMap();
     
