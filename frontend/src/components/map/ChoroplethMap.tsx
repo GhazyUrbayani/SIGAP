@@ -133,7 +133,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       }
       sourceRef.current = null;
     };
-  }, []); // Run once on mount
+  }, [loading]); // Re-run when loading state changes to detect mapRef container
 
   // Update data when geojson changes
   useEffect(() => {
