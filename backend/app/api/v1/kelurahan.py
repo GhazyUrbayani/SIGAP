@@ -160,7 +160,30 @@ async def get_geojson(
     for row in rows:
         geojson_str = row.geojson
         if geojson_str:
-            geom = json.loads(geojson_str) if isinstance(geojson_str, str) else geojson_str
+            geom = None
+            if isinstance(geojson_str, str):
+                if geojson_str.startswith("MULTIPOLYGON"):
+                    # Fallback parser for WKT when PostGIS is disabled
+                    inner = geojson_str.replace("MULTIPOLYGON(((", "").replace(")))", "")
+                    points = inner.split(",")
+                    coords = []
+                    for p in points:
+                        p = p.strip()
+                        if " " in p:
+                            lon, lat = p.split(" ", 1)
+                            coords.append([float(lon), float(lat)])
+                    geom = {
+                        "type": "MultiPolygon",
+                        "coordinates": [[[coords]]]
+                    }
+                else:
+                    try:
+                        geom = json.loads(geojson_str)
+                    except json.JSONDecodeError:
+                        geom = None
+            else:
+                geom = geojson_str
+
             features.append({
                 "type": "Feature",
                 "properties": {
