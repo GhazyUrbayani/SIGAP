@@ -42,6 +42,8 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://sigap-backend-61rh.onrender.com
+      - key: VITE_AZURE_MAPS_KEY
+        sync: false # Set this in Render Dashboard for security
 
 databases:
   - name: sigap-db

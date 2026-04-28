@@ -200,7 +200,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       </div>
 
       {/* Azure Map Container */}
-      <div ref={mapRef} className="w-full h-full" />
+      <div id="azure-map-container" ref={mapRef} className="absolute inset-0 w-full h-full" />
 
       {/* Legend */}
       <div className="absolute bottom-3 right-3 bg-surface/90 backdrop-blur-md rounded-md px-3 py-2 shadow-sm border border-border z-10 pointer-events-none">

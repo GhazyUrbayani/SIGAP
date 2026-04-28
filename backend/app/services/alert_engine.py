@@ -166,7 +166,14 @@ async def check_and_create_alerts(db: AsyncSession) -> List[Alert]:
         if not level:
             continue
 
-        # Check if active (unresolved) alert already exists for this kelurahan
+        # Check if an alert already exists for this specific score
+        existing_score_alert = await db.execute(
+            select(Alert).where(Alert.uss_score_id == row.uss_id)
+        )
+        if existing_score_alert.scalar_one_or_none():
+            continue
+            
+        # Check if active (unresolved) alert already exists for this kelurahan at the same level
         existing = await db.execute(
             select(Alert)
             .where(Alert.kelurahan_id == row.id)

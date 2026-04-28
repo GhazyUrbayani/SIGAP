@@ -18,6 +18,8 @@ from app.schemas.alert import AlertListResponse, AlertResolveRequest, AlertRespo
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
+from app.services.alert_engine import check_and_create_alerts
+
 @router.get("", response_model=AlertListResponse)
 async def list_alerts(
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -28,6 +30,9 @@ async def list_alerts(
     limit: int = Query(20, ge=1, le=100),
 ):
     """List alerts with optional filters."""
+    # Auto-sync alerts to ensure consistency with latest USS scores
+    await check_and_create_alerts(db)
+    
     query = (
         select(Alert, Kelurahan.nama)
         .join(Kelurahan, Alert.kelurahan_id == Kelurahan.id)
