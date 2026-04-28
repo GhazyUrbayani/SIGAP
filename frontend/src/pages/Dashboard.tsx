@@ -4,6 +4,7 @@ import { USSCard } from '../components/dashboard/USSCard';
 import { TrendChart } from '../components/dashboard/TrendChart';
 import { AlertPanel } from '../components/dashboard/AlertPanel';
 import { useUSSLatest, useUSSHistory } from '../hooks/useUSS';
+import { useKelurahanGeoJSON } from '../hooks/useKelurahan';
 import { useAlerts } from '../hooks/useAlerts';
 import { useMapStore } from '../store/mapStore';
 import { formatRelativeTime } from '../lib/formatters';
@@ -11,6 +12,7 @@ import type { USSLatestItem } from '../types/uss';
 
 export default function Dashboard() {
   const { data: ussData, loading: ussLoading } = useUSSLatest();
+  const { data: geojsonData, loading: geojsonLoading } = useKelurahanGeoJSON();
   const { data: alerts, loading: alertsLoading, resolveAlert } = useAlerts(undefined, false);
   const selectedKelurahan = useMapStore((s) => s.selectedKelurahan);
   const setSelectedKelurahan = useMapStore((s) => s.setSelectedKelurahan);
@@ -40,7 +42,8 @@ export default function Dashboard() {
         {/* Left Column: Map + Trend */}
         <div className="space-y-5">
           <ChoroplethMap
-            data={ussData}
+            geojson={geojsonData}
+            loading={geojsonLoading}
             selectedId={selectedKelurahan?.kelurahan_id || null}
             onSelect={handleSelect}
           />

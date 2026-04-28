@@ -51,17 +51,17 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Ensure CORS headers are appended even for unhandled 500 errors."""
+    """Ensure CORS headers are appended and return actual error for debugging."""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     origin = request.headers.get("origin")
     headers = {}
-    if origin in settings.cors_origins_list or "*" in settings.cors_origins_list:
+    if origin and (origin in settings.cors_origins_list or "*" in settings.cors_origins_list):
         headers["Access-Control-Allow-Origin"] = origin
         headers["Access-Control-Allow-Credentials"] = "true"
     
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error"},
+        content={"detail": f"Internal Server Error: {str(exc)}"},
         headers=headers,
     )
 
