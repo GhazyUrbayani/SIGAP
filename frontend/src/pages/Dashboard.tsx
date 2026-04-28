@@ -13,7 +13,7 @@ import type { USSLatestItem } from '../types/uss';
 export default function Dashboard() {
   const { data: ussData, loading: ussLoading } = useUSSLatest();
   const { data: geojsonData, loading: geojsonLoading } = useKelurahanGeoJSON();
-  const { data: alerts, loading: alertsLoading, resolveAlert } = useAlerts(undefined, false);
+  const { data: alerts, loading: alertsLoading, resolveAlert } = useAlerts();
   const selectedKelurahan = useMapStore((s) => s.selectedKelurahan);
   const setSelectedKelurahan = useMapStore((s) => s.setSelectedKelurahan);
   const { data: history, loading: historyLoading } = useUSSHistory(
@@ -94,7 +94,7 @@ export default function Dashboard() {
           {/* Live Alerts */}
           <div>
             <h2 className="text-xs font-medium uppercase tracking-widest text-text-tertiary mb-3">
-              Alert Aktif
+              Daftar Alert
             </h2>
             <AlertPanel
               alerts={alerts.slice(0, 5)}
