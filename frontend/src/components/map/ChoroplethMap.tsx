@@ -194,22 +194,27 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         fillOpacity: 0.5
       });
 
-      // 2. Heatmap Layer - Exponential Weight for better variance
-      const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
-        weight: ['interpolate', ['linear'], ussValue, 0, 0.2, 100, 1],
-        intensity: ['interpolate', ['linear'], ['zoom'], 10, 0.9, 14, 1.3, 16, 1.6],
-        radius: ['interpolate', ['linear'], ['zoom'], 10, 22, 12, 40, 14, 65],
-        opacity: 0.9,
+      // 2. Heat Layer (value-based bubbles so colors reflect USS)
+      const heatLayer = new window.atlas.layer.BubbleLayer(pointSource, null, {
         color: [
+          'step',
+          ussValue,
+          '#22C55E',
+          40, '#FACC15',
+          70, '#EF4444'
+        ],
+        radius: [
           'interpolate',
           ['linear'],
-          ['heatmap-density'],
-          0, 'rgba(0,0,0,0)',
-          0.05, 'rgba(34, 197, 94, 0.35)',  // Greenish glow for low
-          0.45, 'rgba(250, 204, 21, 0.65)', // Yellow glow for mid
-          0.75, 'rgba(239, 68, 68, 0.85)',  // Red glow for high
-          1, 'rgba(153, 27, 27, 1.0)'     // Dark red core for extreme
-        ]
+          ussValue,
+          0, 10,
+          40, 16,
+          70, 22,
+          100, 28
+        ],
+        opacity: 0.65,
+        strokeColor: '#ffffff',
+        strokeWidth: 1
       });
 
       // 3. Line Layer
@@ -220,7 +225,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       lineLayerRef.current = lineLayer;
 
-      map.layers.add([polygonLayer, heatmapLayer, lineLayer]);
+      map.layers.add([polygonLayer, heatLayer, lineLayer]);
 
       // Add click event to polygons
       map.events.add('click', polygonLayer, (e: any) => {
