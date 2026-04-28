@@ -42,8 +42,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       // Initialize Azure Map
       const map = new window.atlas.Map(mapRef.current, {
         center: [107.6191, -6.9175], // Bandung center
-        zoom: 11,
-        style: 'grayscale_light', // Clean style to make choropleth stand out
+        zoom: 12, // Start closer to Bandung
+        style: 'grayscale_light',
         authOptions: {
           authType: 'subscriptionKey',
           subscriptionKey: import.meta.env.VITE_AZURE_MAPS_KEY || '',
@@ -53,48 +53,47 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       mapInstance.current = map;
 
     map.events.add('ready', () => {
-      // Add data source
       const source = new window.atlas.source.DataSource();
       map.sources.add(source);
       sourceRef.current = source;
 
-      // Add heatmap source
       const pointSource = new window.atlas.source.DataSource();
       map.sources.add(pointSource);
       pointSourceRef.current = pointSource;
 
-      // 1. Polygon Layer (The Choropleth)
+      // 1. Polygon Layer (Choropleth) - Distinct Colors
       const polygonLayer = new window.atlas.layer.PolygonLayer(source, null, {
         fillColor: [
           'step',
           ['get', 'uss'],
-          '#EFEDE8', // default/null
-          0, '#75A58A', // zone-green (0-39)
-          40, '#D4A373', // zone-yellow (40-69)
-          70, '#B93A3A'  // zone-red (70-100)
+          '#EFEDE8',
+          0, '#22C55E',  // Vibrant Green
+          40, '#FACC15', // Vibrant Yellow
+          70, '#EF4444'  // Vibrant Red
         ],
-        fillOpacity: 0.6
+        fillOpacity: 0.5
       });
 
-      // 2. Heatmap Layer
+      // 2. Heatmap Layer - High Contrast Gradient
       const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
         weight: ['get', 'uss'],
-        radius: 30,
-        opacity: 0.7,
+        radius: 35,
+        opacity: 0.8,
         color: [
           'interpolate',
           ['linear'],
           ['heatmap-density'],
           0, 'rgba(0,0,0,0)',
-          0.5, 'rgba(212, 163, 115, 0.4)',
-          1, 'rgba(185, 28, 28, 0.8)'
+          0.3, 'rgba(250, 204, 21, 0.4)', // Yellow glow
+          0.7, 'rgba(239, 68, 68, 0.6)',  // Red glow
+          1, 'rgba(153, 27, 27, 0.9)'     // Dark red core
         ]
       });
 
-      // 3. Line Layer (Borders)
+      // 3. Line Layer
       const lineLayer = new window.atlas.layer.LineLayer(source, null, {
         strokeColor: '#ffffff',
-        strokeWidth: 1.5
+        strokeWidth: 2
       });
 
       map.layers.add([polygonLayer, heatmapLayer, lineLayer]);
@@ -103,7 +102,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       map.events.add('click', polygonLayer, (e: any) => {
         if (e.shapes && e.shapes.length > 0) {
           const prop = e.shapes[0].getProperties();
-          const item: USSLatestItem = {
+          const item = {
             kelurahan_id: prop.id,
             nama: prop.nama,
             uss: prop.uss,
@@ -113,29 +112,25 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
             socioeconomic_score: prop.socioeconomic_score,
             computed_at: prop.computed_at
           };
-          onSelect(item);
+          onSelect(item as any);
         }
       });
-      
-      // Load data and set camera
+
       if (geojson) {
         source.add(geojson);
-        
-        // Extract centroids for heatmap
         const pointFeatures = geojson.features.map((f: any) => ({
           type: 'Feature',
           geometry: {
             type: 'Point',
-            coordinates: f.properties.centroid || f.geometry.coordinates[0][0][0] // fallback
+            coordinates: f.properties.centroid || f.geometry.coordinates[0][0][0]
           },
           properties: f.properties
         }));
         pointSource.add(pointFeatures);
 
-        // Automatically adjust map view to Bandung
         map.setCamera({
           bounds: window.atlas.data.BoundingBox.fromData(geojson),
-          padding: 40,
+          padding: 50,
           type: 'jump'
         });
       }
