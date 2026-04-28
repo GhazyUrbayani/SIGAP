@@ -74,19 +74,20 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         fillOpacity: 0.5
       });
 
-      // 2. Heatmap Layer - High Contrast Gradient
+      // 2. Heatmap Layer - Exponential Weight for better variance
       const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
-        weight: ['get', 'uss'],
-        radius: 35,
+        weight: ['pow', ['get', 'uss'], 1.5], // Exponential scaling to show big difference between scores
+        radius: 40,
         opacity: 0.8,
         color: [
           'interpolate',
           ['linear'],
           ['heatmap-density'],
           0, 'rgba(0,0,0,0)',
-          0.3, 'rgba(250, 204, 21, 0.4)', // Yellow glow
-          0.7, 'rgba(239, 68, 68, 0.6)',  // Red glow
-          1, 'rgba(153, 27, 27, 0.9)'     // Dark red core
+          0.2, 'rgba(34, 197, 94, 0.2)',  // Greenish glow for low
+          0.5, 'rgba(250, 204, 21, 0.5)', // Yellow glow for mid
+          0.8, 'rgba(239, 68, 68, 0.8)',  // Red glow for high
+          1, 'rgba(153, 27, 27, 1.0)'     // Dark red core for extreme
         ]
       });
 
@@ -113,6 +114,16 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
             computed_at: prop.computed_at
           };
           onSelect(item as any);
+          
+          // Also zoom to it locally
+          if (prop.centroid) {
+            map.setCamera({
+              center: prop.centroid,
+              zoom: 15,
+              type: 'fly',
+              duration: 1000
+            });
+          }
         }
       });
 
@@ -130,7 +141,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
         map.setCamera({
           bounds: window.atlas.data.BoundingBox.fromData(geojson),
-          padding: 50,
+          padding: 80,
           type: 'jump'
         });
       }
@@ -146,8 +157,24 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         mapInstance.current = null;
       }
       sourceRef.current = null;
+      pointSourceRef.current = null;
     };
   }, [loading]); // Re-run when loading state changes to detect mapRef container
+
+  // Listen for selection from Card list to Zoom
+  useEffect(() => {
+    if (mapInstance.current && selectedId && geojson) {
+      const selectedFeature = geojson.features.find((f: any) => f.properties.id === selectedId);
+      if (selectedFeature && selectedFeature.properties.centroid) {
+        mapInstance.current.setCamera({
+          center: selectedFeature.properties.centroid,
+          zoom: 15,
+          type: 'fly',
+          duration: 1000
+        });
+      }
+    }
+  }, [selectedId, geojson]);
 
   // Update data when geojson changes
   useEffect(() => {
@@ -168,7 +195,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       mapInstance.current.setCamera({
         bounds: window.atlas.data.BoundingBox.fromData(geojson),
-        padding: 40
+        padding: 60
       });
     }
   }, [geojson]);
@@ -178,7 +205,6 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
     if (mapInstance.current && mapInstance.current.layers.getLayers().length > 0) {
       const layers = mapInstance.current.layers.getLayers();
       const polygonLayer = layers.find((l: any) => l instanceof window.atlas.layer.PolygonLayer);
-      const lineLayer = layers.find((l: any) => l instanceof window.atlas.layer.LineLayer);
       
       if (polygonLayer) {
         polygonLayer.setOptions({

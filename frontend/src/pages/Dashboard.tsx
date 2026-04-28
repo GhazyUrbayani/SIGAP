@@ -1,4 +1,4 @@
-import { Header } from '../components/layout/Header';
+  import { Header } from '../components/layout/Header';
 import { ChoroplethMap } from '../components/map/ChoroplethMap';
 import { USSCard } from '../components/dashboard/USSCard';
 import { TrendChart } from '../components/dashboard/TrendChart';
