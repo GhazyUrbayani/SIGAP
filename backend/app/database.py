@@ -4,9 +4,24 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import DeclarativeBase
 
 import ssl
+from urllib.parse import parse_qsl, urlencode, urlparse
 from app.config import get_settings
 
 settings = get_settings()
+
+
+def normalize_async_url(url: str) -> str:
+    """Return an async DB URL without unsupported query params."""
+    parsed = urlparse(url)
+    if not parsed.query:
+        return url
+
+    query_pairs = [
+        (key, value)
+        for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+        if key.lower() != "sslmode"
+    ]
+    return parsed._replace(query=urlencode(query_pairs)).geturl()
 
 connect_args = {}
 if settings.REQUIRE_SSL:
@@ -16,7 +31,7 @@ if settings.REQUIRE_SSL:
     connect_args["ssl"] = ctx
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    normalize_async_url(settings.DATABASE_URL),
     echo=settings.APP_DEBUG,
     pool_size=20,
     max_overflow=10,
