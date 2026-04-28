@@ -22,7 +22,7 @@ services:
       - key: APP_DEBUG
         value: "false"
       - key: CORS_ORIGINS
-        value: https://sigap-frontend.onrender.com,http://localhost:5173
+        value: https://sigap-frontend.onrender.com,https://purple-pebble-0fa7c9700.7.azurestaticapps.net,http://localhost:5173
 
   # ─── FRONTEND (Static Site — always free) ─────
   - type: web
@@ -41,7 +41,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://sigap-backend.onrender.com
+        value: https://sigap-backend-61rh.onrender.com
 
 databases:
   - name: sigap-db
