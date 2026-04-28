@@ -141,8 +141,10 @@ async def get_geojson(
 
     if HAS_POSTGIS:
         columns.append(ST_AsGeoJSON(Kelurahan.geometry).label("geojson"))
+        columns.append(ST_AsGeoJSON(Kelurahan.centroid).label("centroid"))
     else:
         columns.append(Kelurahan.geometry.label("geojson"))
+        columns.append(Kelurahan.centroid.label("centroid"))
 
     query = select(*columns).outerjoin(
         latest_uss, Kelurahan.id == latest_uss.c.kelurahan_id
@@ -158,31 +160,35 @@ async def get_geojson(
 
     features = []
     for row in rows:
-        geojson_str = row.geojson
-        if geojson_str:
+            geojson_str = row.geojson
+            centroid_str = row.centroid
             geom = None
-            if isinstance(geojson_str, str):
-                if geojson_str.startswith("MULTIPOLYGON"):
-                    # Fallback parser for WKT when PostGIS is disabled
-                    inner = geojson_str.replace("MULTIPOLYGON(((", "").replace(")))", "")
-                    points = inner.split(",")
-                    coords = []
-                    for p in points:
-                        p = p.strip()
-                        if " " in p:
-                            lon, lat = p.split(" ", 1)
-                            coords.append([float(lon), float(lat)])
-                    geom = {
-                        "type": "MultiPolygon",
-                        "coordinates": [[[coords]]]
-                    }
-                else:
-                    try:
-                        geom = json.loads(geojson_str)
-                    except json.JSONDecodeError:
-                        geom = None
-            else:
-                geom = geojson_str
+            cent = None
+
+            # Helper for WKT fallback (Polygon/MultiPolygon)
+            def parse_geom(s):
+                if not s: return None
+                if isinstance(s, str):
+                    if s.startswith("MULTIPOLYGON"):
+                        inner = s.replace("MULTIPOLYGON(((", "").replace(")))", "")
+                        points = inner.split(",")
+                        coords = []
+                        for p in points:
+                            p = p.strip()
+                            if " " in p:
+                                lon, lat = p.split(" ", 1)
+                                coords.append([float(lon), float(lat)])
+                        return {"type": "MultiPolygon", "coordinates": [[[coords]]]}
+                    if s.startswith("POINT"):
+                        inner = s.replace("POINT(", "").replace(")", "")
+                        lon, lat = inner.strip().split(" ")
+                        return {"type": "Point", "coordinates": [float(lon), float(lat)]}
+                    try: return json.loads(s)
+                    except: return None
+                return s
+
+            geom = parse_geom(geojson_str)
+            cent = parse_geom(centroid_str)
 
             features.append({
                 "type": "Feature",
@@ -199,6 +205,7 @@ async def get_geojson(
                     "infrastructure_score": float(row.infrastructure_score) if row.infrastructure_score else None,
                     "socioeconomic_score": float(row.socioeconomic_score) if row.socioeconomic_score else None,
                     "computed_at": row.computed_at.isoformat() if row.computed_at else None,
+                    "centroid": cent["coordinates"] if cent else None,
                 },
                 "geometry": geom,
             })
