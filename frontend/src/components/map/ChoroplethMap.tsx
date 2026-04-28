@@ -16,28 +16,69 @@ interface ChoroplethMapProps {
   onSelect: (item: USSLatestItem) => void;
 }
 
+const defaultCamera = {
+  center: [107.6191, -6.9175] as [number, number],
+  zoom: 12
+};
+
+const normalizeCoordinate = (coord: any): [number, number] | null => {
+  if (!Array.isArray(coord) || coord.length < 2) return null;
+
+  const lon = Number(coord[0]);
+  const lat = Number(coord[1]);
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null;
+
+  const isLonValid = lon >= -180 && lon <= 180;
+  const isLatValid = lat >= -90 && lat <= 90;
+  if (isLonValid && isLatValid) return [lon, lat];
+
+  const swappedLon = lat;
+  const swappedLat = lon;
+  const isSwappedLonValid = swappedLon >= -180 && swappedLon <= 180;
+  const isSwappedLatValid = swappedLat >= -90 && swappedLat <= 90;
+  if (isSwappedLonValid && isSwappedLatValid) return [swappedLon, swappedLat];
+
+  return null;
+};
+
 const getPointCoordinate = (feature: any): [number, number] | null => {
-  const centroid = feature?.properties?.centroid;
-  if (Array.isArray(centroid) && centroid.length === 2) {
-    return centroid as [number, number];
-  }
+  const centroid = normalizeCoordinate(feature?.properties?.centroid);
+  if (centroid) return centroid;
 
   const geometry = feature?.geometry;
   if (!geometry || !geometry.coordinates) return null;
 
   if (geometry.type === 'Point') {
-    return geometry.coordinates as [number, number];
+    return normalizeCoordinate(geometry.coordinates);
   }
 
   if (geometry.type === 'Polygon') {
-    return geometry.coordinates?.[0]?.[0] ?? null;
+    return normalizeCoordinate(geometry.coordinates?.[0]?.[0]);
   }
 
   if (geometry.type === 'MultiPolygon') {
-    return geometry.coordinates?.[0]?.[0]?.[0] ?? null;
+    return normalizeCoordinate(geometry.coordinates?.[0]?.[0]?.[0]);
   }
 
   return null;
+};
+
+const getBoundsFromCoordinates = (coordinates: [number, number][]) => {
+  if (coordinates.length === 0) return null;
+
+  let minLon = coordinates[0][0];
+  let minLat = coordinates[0][1];
+  let maxLon = coordinates[0][0];
+  let maxLat = coordinates[0][1];
+
+  coordinates.forEach(([lon, lat]) => {
+    if (lon < minLon) minLon = lon;
+    if (lat < minLat) minLat = lat;
+    if (lon > maxLon) maxLon = lon;
+    if (lat > maxLat) maxLat = lat;
+  });
+
+  return [minLon, minLat, maxLon, maxLat] as [number, number, number, number];
 };
 
 export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: ChoroplethMapProps) {
@@ -61,10 +102,13 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
     source.add(data);
 
     pointSource.clear();
+    const pointCoordinates: [number, number][] = [];
     const pointFeatures = data.features
       .map((f: any) => {
         const coordinates = getPointCoordinate(f);
         if (!coordinates) return null;
+
+        pointCoordinates.push(coordinates);
 
         return {
           type: 'Feature',
@@ -81,16 +125,17 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       pointSource.add(pointFeatures);
     }
 
-    try {
+    const bounds = getBoundsFromCoordinates(pointCoordinates);
+    if (bounds) {
       map.setCamera({
-        bounds: window.atlas.data.BoundingBox.fromData(data),
+        bounds,
         padding: 60,
         type: 'jump'
       });
-    } catch (err) {
+    } else {
       map.setCamera({
-        center: [107.6191, -6.9175],
-        zoom: 12,
+        center: defaultCamera.center,
+        zoom: defaultCamera.zoom,
         type: 'jump'
       });
     }
@@ -115,8 +160,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       // Initialize Azure Map
       const map = new window.atlas.Map(mapRef.current, {
-        center: [107.6191, -6.9175], // Bandung center
-        zoom: 12, // Start closer to Bandung
+        center: defaultCamera.center, // Bandung center
+        zoom: defaultCamera.zoom, // Start closer to Bandung
         style: 'grayscale_light',
         authOptions: {
           authType: 'subscriptionKey',
@@ -150,7 +195,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       // 2. Heatmap Layer - Exponential Weight for better variance
       const heatmapLayer = new window.atlas.layer.HeatMapLayer(pointSource, null, {
-        weight: ['pow', ['max', 0, ['coalesce', ['get', 'uss'], 0]], 1.5],
+        weight: ['pow', ['max', 0, ['to-number', ['coalesce', ['get', 'uss'], 0]]], 1.5],
         radius: 40,
         opacity: 0.8,
         color: [
