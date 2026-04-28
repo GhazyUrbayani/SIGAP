@@ -62,13 +62,11 @@ export default function Alerts() {
       </div>
 
       {/* Alert List */}
-      <div className="max-w-2xl">
-        <AlertPanel
-          alerts={alerts}
-          loading={loading}
-          onResolve={resolveAlert}
-        />
-      </div>
+      <AlertPanel
+        alerts={alerts}
+        loading={loading}
+        onResolve={resolveAlert}
+      />
     </div>
   );
 }

@@ -2,10 +2,8 @@
 import { ChoroplethMap } from '../components/map/ChoroplethMap';
 import { USSCard } from '../components/dashboard/USSCard';
 import { TrendChart } from '../components/dashboard/TrendChart';
-import { AlertPanel } from '../components/dashboard/AlertPanel';
 import { useUSSLatest, useUSSHistory } from '../hooks/useUSS';
 import { useKelurahanGeoJSON } from '../hooks/useKelurahan';
-import { useAlerts } from '../hooks/useAlerts';
 import { useMapStore } from '../store/mapStore';
 import { formatRelativeTime } from '../lib/formatters';
 import type { USSLatestItem } from '../types/uss';
@@ -13,7 +11,6 @@ import type { USSLatestItem } from '../types/uss';
 export default function Dashboard() {
   const { data: ussData, loading: ussLoading } = useUSSLatest();
   const { data: geojsonData, loading: geojsonLoading } = useKelurahanGeoJSON();
-  const { data: alerts, loading: alertsLoading, resolveAlert } = useAlerts();
   const selectedKelurahan = useMapStore((s) => s.selectedKelurahan);
   const setSelectedKelurahan = useMapStore((s) => s.setSelectedKelurahan);
   const { data: history, loading: historyLoading } = useUSSHistory(
@@ -64,7 +61,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Right Column: USS Cards + Alerts */}
+        {/* Right Column: USS Cards */}
         <div className="space-y-5">
           {/* USS Cards */}
           <div>
@@ -89,18 +86,6 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Live Alerts */}
-          <div>
-            <h2 className="text-xs font-medium uppercase tracking-widest text-text-tertiary mb-3">
-              Daftar Alert
-            </h2>
-            <AlertPanel
-              alerts={alerts.slice(0, 5)}
-              loading={alertsLoading}
-              onResolve={resolveAlert}
-            />
           </div>
         </div>
       </div>

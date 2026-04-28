@@ -56,6 +56,10 @@ function AlertCard({
   };
 
   const style = levelColors[alert.trigger_level] || levelColors.watch;
+  const separatorIndex = alert.message.indexOf('—');
+  const message = separatorIndex >= 0
+    ? alert.message.slice(separatorIndex + 1).trim()
+    : alert.message;
 
   return (
     <div
@@ -82,8 +86,7 @@ function AlertCard({
       </p>
 
       <p className="text-sm text-text-secondary leading-relaxed mb-3">
-        {alert.message.slice(alert.message.indexOf('—') + 2, 200)}
-        {alert.message.length > 200 ? '...' : ''}
+        {message}
       </p>
 
       {!alert.is_resolved && onResolve && (
