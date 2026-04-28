@@ -70,8 +70,9 @@ make seed
 
 ### 4. Open the App
 
-- **Frontend**: https://purple-pebble-0fa7c9700.7.azurestaticapps.net/ | https://sigap-frontend.onrender.com/
-- **Backend API**: https://sigap-api-lvynv3vb42tuc.azurewebsites.net | https://sigap-backend-61rh.onrender.com
+- **Frontend**: [http://localhost:5173](http://localhost:5173)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **API Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 ### 5. Login Credentials
 
