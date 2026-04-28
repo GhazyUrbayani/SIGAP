@@ -31,11 +31,10 @@ class Settings(BaseSettings):
             if "postgresql://" in url and "+asyncpg" not in url:
                 url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
             
-            # Remove sslmode=require for asyncpg
-            if "?sslmode=require" in url:
-                url = url.replace("?sslmode=require", "")
-            elif "&sslmode=require" in url:
-                url = url.replace("&sslmode=require", "")
+            # Completely strip query params (like sslmode=require) for asyncpg
+            import urllib.parse
+            parsed = urllib.parse.urlparse(url)
+            url = parsed._replace(query="").geturl()
             
             return url
         return (

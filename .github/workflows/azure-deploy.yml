@@ -2,13 +2,13 @@ name: Deploy SIGAP to Azure
 
 on:
   workflow_dispatch:  # Manual trigger
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'infra/**'
-      - 'azure.yaml'
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'backend/**'
+  #     - 'frontend/**'
+  #     - 'infra/**'
+  #     - 'azure.yaml'
 
 permissions:
   id-token: write
