@@ -8,6 +8,11 @@
 
 ---
 
+## 🔗 Link URL app
+
+- **Frontend**: https://purple-pebble-0fa7c9700.7.azurestaticapps.net/ | https://sigap-frontend.onrender.com/
+- **Backend API**: https://sigap-api-lvynv3vb42tuc.azurewebsites.net | https://sigap-backend-61rh.onrender.com
+
 ## 🎯 Features
 
 - **Urban Stress Score (USS) Engine** — Model Ensemble (XGBoost / LightGBM / Random Forest — dibandingkan, dipilih terbaik via RMSE/AUC) + Isolation Forest untuk validasi anomali. Skor kerentanan 0–100 per kelurahan berdasarkan 3 dimensi: Iklim, Infrastruktur, dan Sosial-Ekonomi.
