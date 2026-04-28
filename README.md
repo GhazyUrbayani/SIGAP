@@ -71,7 +71,7 @@ make seed
 ### 4. Open the App
 
 - **Frontend**: https://purple-pebble-0fa7c9700.7.azurestaticapps.net/ | https://sigap-frontend.onrender.com/
-- **Backend API**: sigap-api-lvynv3vb42tuc.azurewebsites.net | https://sigap-backend-61rh.onrender.com
+- **Backend API**: https://sigap-api-lvynv3vb42tuc.azurewebsites.net | https://sigap-backend-61rh.onrender.com
 
 ### 5. Login Credentials
 
