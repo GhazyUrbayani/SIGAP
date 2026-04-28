@@ -21,6 +21,28 @@ const defaultCamera = {
   zoom: 12
 };
 
+const getUssNumber = (value: any): number | null => {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+};
+
+const getHeatStyle = (uss: number | null) => {
+  if (uss === null) {
+    return { color: '#22C55E', radius: 14 };
+  }
+
+  if (uss >= 70) {
+    return { color: '#EF4444', radius: uss >= 90 ? 30 : 26 };
+  }
+
+  if (uss >= 40) {
+    return { color: '#FACC15', radius: 20 };
+  }
+
+  return { color: '#22C55E', radius: 14 };
+};
+
 const normalizeCoordinate = (coord: any): [number, number] | null => {
   if (!Array.isArray(coord) || coord.length < 2) return null;
 
@@ -108,6 +130,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         const coordinates = getPointCoordinate(f);
         if (!coordinates) return null;
 
+        const uss = getUssNumber(f?.properties?.uss);
+        const heatStyle = getHeatStyle(uss);
         pointCoordinates.push(coordinates);
 
         return {
@@ -116,7 +140,11 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
             type: 'Point',
             coordinates
           },
-          properties: f.properties
+          properties: {
+            ...f.properties,
+            heatColor: heatStyle.color,
+            heatRadius: heatStyle.radius
+          }
         };
       })
       .filter(Boolean);
@@ -196,23 +224,9 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
 
       // 2. Heat Layer (value-based bubbles so colors reflect USS)
       const heatLayer = new window.atlas.layer.BubbleLayer(pointSource, null, {
-        color: [
-          'step',
-          ussValue,
-          '#22C55E',
-          40, '#FACC15',
-          70, '#EF4444'
-        ],
-        radius: [
-          'interpolate',
-          ['linear'],
-          ussValue,
-          0, 10,
-          40, 16,
-          70, 22,
-          100, 28
-        ],
-        opacity: 0.65,
+        color: ['coalesce', ['get', 'heatColor'], '#22C55E'],
+        radius: ['coalesce', ['get', 'heatRadius'], 14],
+        opacity: 0.75,
         strokeColor: '#ffffff',
         strokeWidth: 1
       });
