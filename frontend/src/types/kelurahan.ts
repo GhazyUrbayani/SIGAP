@@ -12,6 +12,7 @@ export interface KelurahanFeature {
     kota: string;
     populasi: number | null;
     luas_km2: number | null;
+    centroid?: [number, number] | null;
     uss: number | null;
     uss_level: string | null;
     climate_score: number | null;

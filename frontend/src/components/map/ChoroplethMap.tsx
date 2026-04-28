@@ -21,6 +21,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
   const mapInstance = useRef<any>(null);
   const sourceRef = useRef<any>(null);
   const pointSourceRef = useRef<any>(null);
+  const lineLayerRef = useRef<any>(null);
 
   useEffect(() => {
     let timeoutId: number;
@@ -97,6 +98,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
         strokeWidth: 2
       });
 
+      lineLayerRef.current = lineLayer;
+
       map.layers.add([polygonLayer, heatmapLayer, lineLayer]);
 
       // Add click event to polygons
@@ -158,6 +161,7 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
       }
       sourceRef.current = null;
       pointSourceRef.current = null;
+      lineLayerRef.current = null;
     };
   }, [loading]); // Re-run when loading state changes to detect mapRef container
 
@@ -216,8 +220,8 @@ export function ChoroplethMap({ geojson, loading, selectedId, onSelect }: Chorop
           ]
         });
       }
-      if (lineLayer) {
-        lineLayer.setOptions({
+      if (lineLayerRef.current) {
+        lineLayerRef.current.setOptions({
           strokeColor: [
             'case',
             ['==', ['get', 'id'], selectedId || ''],
