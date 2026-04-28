@@ -10,14 +10,12 @@
 
 ## 🎯 Features
 
-- **Urban Stress Score (USS) Engine** — ML-powered scoring (0–100) per kelurahan
-  combining climate, infrastructure, and socioeconomic indicators
-- **Choropleth Map** — Interactive zone-colored map (GREEN/YELLOW/RED) with drill-down
-- **Cascading Failure Detection** — Non-linear interaction modeling across dimensions
-- **Dynamic Trigger System** — Automated BMKG data ingestion every 6 hours with
-  anomaly detection (z-score > 2σ)
-- **Alert Engine** — Rule-based NLG generating actionable alerts in Bahasa Indonesia
-- **Scenario Simulator** — What-if analysis projecting USS over 12/24/36/60 months
+- **Urban Stress Score (USS) Engine** — Model Ensemble (XGBoost / LightGBM / Random Forest — dibandingkan, dipilih terbaik via RMSE/AUC) + Isolation Forest untuk validasi anomali. Skor kerentanan 0–100 per kelurahan berdasarkan 3 dimensi: Iklim, Infrastruktur, dan Sosial-Ekonomi.
+- **Cascading Failure Modeler** — Mendeteksi interaksi antar-dimensi dengan interaction term non-linear. Skor melonjak jika ≥2 dimensi kritis bersamaan (banjir tinggi × infrastruktur buruk × kemiskinan tinggi = efek domino).
+- **Dynamic Trigger System** — Pipeline otomatis menarik data BMKG per minggu, deteksi anomali via z-score > 2σ, dan memicu pembaruan USS jika threshold terlampaui.
+- **Choropleth Dashboard** — Visualisasi HeatMap interaktif dengan zona 🟢 HIJAU / 🟡 KUNING / 🔴 MERAH, dilengkapi drill-down per RT/RW dan grafik tren historis USS ≥30 hari.
+- **Actionable Alert Engine** — Generator rekomendasi teks natural language Bahasa Indonesia per kelurahan zona KUNING/MERAH. Menampilkan penyebab, lokasi titik kritis, dan tenggat aksi.
+- **Skenario Simulator** — Fitur "bagaimana jika" untuk perencana kota: simulasi dampak pembangunan infrastruktur terhadap USS 5 tahun ke depan, dengan tampilan baseline vs intervensi.
 - **JWT Authentication** — Role-based access (Admin, Analyst, Viewer)
 
 ---
@@ -28,10 +26,30 @@
 | --------- | --------------------------------------------------- |
 | Backend   | FastAPI · Python 3.11 · PostgreSQL 15 + PostGIS · Redis |
 | Frontend  | React 18 · TypeScript · Tailwind CSS · Vite         |
-| ML        | scikit-learn · XGBoost · LightGBM · Isolation Forest|
+| ML        | scikit-learn · XGBoost · LightGBM · Isolation Forest |
 | Maps      | Azure Maps (SVG prototype for local dev)            |
 | Auth      | JWT (access + refresh tokens)                       |
 | DevOps    | Docker · docker-compose                             |
+
+### Azure Cloud Services
+
+| Service | Fungsi |
+|---------|--------|
+| **Azure Machine Learning** | Training, deployment, dan monitoring model anomaly detection (Isolation Forest) + ensemble classifier (XGBoost / LightGBM) |
+| **Azure Event Hubs** | Ingest stream data BMKG real-time (curah hujan, suhu, kelembaban) |
+| **Azure Maps** | Visualisasi choropleth dinamis — HeatMap layer-ed overlay multi-hazard |
+| **Azure Synapse Analytics** | Pipeline ETL integrator data BMKG, BPS, OSM, dan PUPR |
+| **Power BI Embedded** | Dashboard eksekutif untuk stakeholder (tanpa instalasi) |
+
+### Dataset Open Source
+
+| Sumber | Deskripsi |
+|--------|-----------|
+| **BMKG Open Data API** | Data iklim (curah hujan, suhu, kelembaban) |
+| **BPS Statistik Kemiskinan 2023–2024** | Indikator sosial-ekonomi per wilayah |
+| **OpenStreetMap Indonesia** | Kondisi jalan & drainase |
+| **BNPB GIS Disaster History** | Histori kejadian bencana |
+| **Riskesdas** | Indeks kesehatan per kelurahan |
 
 ---
 
@@ -138,21 +156,76 @@ sigap/
 
 ## 🏙️ USS Engine Details
 
-The Urban Stress Score is computed using a multi-dimensional weighted model:
+The Urban Stress Score is computed using a **model ensemble** approach with **non-linear interaction terms**:
 
 ```
 USS = base_score × (1 + interaction_multiplier)
 
 where:
-  base_score = 0.40 × Climate + 0.35 × Infrastructure + 0.25 × SocioEconomic
+  base_score = w₁ × Climate + w₂ × Infrastructure + w₃ × SocioEconomic
   interaction_multiplier = cascading_failure_factor(Climate, Infra, SocEco)
+
+  Bobot (w) dikalibrasi menggunakan model terpilih terhadap data historis
+  kejadian bencana BPBD.
 ```
 
-- **Climate indicators**: rainfall intensity, flood frequency, temperature anomaly, humidity
-- **Infrastructure indicators**: road damage ratio, drainage quality, building density, green space
-- **Socioeconomic indicators**: poverty rate, unemployment, health facility access, education index
+**Model Comparison**: XGBoost, LightGBM, dan Random Forest dibandingkan — model terbaik dipilih berdasarkan evaluasi RMSE/AUC. Isolation Forest digunakan sebagai **validasi anomali** untuk memastikan skor USS tidak mengandung outlier yang tidak terdeteksi.
 
-Cascading failure uses a non-linear geometric mean approach to model compounding effects.
+**Dimensi USS**:
+- **Climate**: rainfall intensity, flood frequency, temperature anomaly, humidity
+- **Infrastructure**: road damage ratio, drainage quality, building density, green space
+- **Socioeconomic**: poverty rate, unemployment, health facility access, education index
+
+**Cascading Failure**: Menggunakan non-linear geometric mean approach. Skor melonjak jika ≥2 dimensi kritis bersamaan (banjir tinggi × infrastruktur buruk × kemiskinan tinggi = efek domino non-linear). Feature Importance per interaction term tersedia untuk transparansi model.
+
+**Zona USS**:
+- 🟢 **Hijau (USS 0–39)**: Aman, tidak ada aksi darurat
+- 🟡 **Kuning (USS 40–69)**: Waspada, rekomendasikan inspeksi rutin
+- 🔴 **Merah (USS 70–100)**: Darurat, aksi segera diperlukan
+
+---
+
+## 🔔 Alert Engine
+
+Setiap kelurahan zona KUNING/MERAH dilengkapi rekomendasi teks **natural language** Bahasa Indonesia yang menampilkan penyebab, lokasi titik kritis, dan tenggat aksi.
+
+**Contoh Output**:
+> *"Kelurahan X masuk ZONA MERAH karena anomali curah hujan +340% dari baseline, 3 titik drainase kritis teridentifikasi di RW 05, 09, 14 dan sekitarnya. Rekomendasi: inspeksi fisik dan siagakan tim BPBD dalam 48 jam."*
+
+**Trigger Levels**:
+
+| Level | USS Range | Aksi |
+|-------|-----------|------|
+| **Watch** | 60–69 | Notifikasi email ke Analyst |
+| **Warning** | 70–79 | Notifikasi email + in-app ke BPBD |
+| **Emergency** | ≥80 | Push notification + laporan otomatis ke Kepala Daerah |
+
+---
+
+## 🧑‍💼 Cara Penggunaan (User Flow)
+
+### Flow Pengguna (Petugas Pemda / BPBD)
+
+**Langkah 1 — Login Dashboard**
+Pengguna mengakses portal SIGAP melalui **browser**. Login menggunakan akun Pemda (integrasi SSO atau credential demo). **Tidak diperlukan instalasi software tambahan.**
+
+**Langkah 2 — Lihat Peta Urban Stress Score**
+Halaman utama menampilkan peta kota dengan warna per kelurahan:
+- 🟢 **Hijau (USS 0–39)**: Aman, tidak ada aksi darurat
+- 🟡 **Kuning (USS 40–69)**: Waspada, rekomendasikan inspeksi rutin
+- 🔴 **Merah (USS 70–100)**: Darurat, aksi segera diperlukan
+
+**Langkah 3 — Drill-down Kelurahan**
+Klik satu kelurahan → tampil panel detail:
+- Skor tiap dimensi (Iklim / Infrastruktur / Sosial-Ekonomi)
+- Grafik tren USS 30 hari terakhir
+- Peta titik-titik infrastruktur kritis
+
+**Langkah 4 — Baca Rekomendasi Aksi**
+Setiap kelurahan zona KUNING/MERAH dilengkapi **teks rekomendasi spesifik**, ditampilkan dalam Bahasa Indonesia yang dapat langsung dipahami aparatur **tanpa keahlian teknis**.
+
+**Langkah 5 — Jalankan Simulasi**
+Petugas perencana dapat menggunakan fitur **simulator** untuk melihat proyeksi USS jika infrastruktur di titik tertentu diperbaiki atau anggaran dialihkan. Tampilan perbandingan baseline vs intervensi tersedia untuk evaluasi kebijakan.
 
 ---
 
