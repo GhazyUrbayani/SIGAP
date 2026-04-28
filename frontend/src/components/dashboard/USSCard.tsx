@@ -68,19 +68,33 @@ export function USSCard({ data, isSelected, onClick, previousUss }: USSCardProps
 
       {/* Dimension Bars */}
       <div className="space-y-1.5">
-        <DimensionBar label="Iklim" value={data.climate_score} />
-        <DimensionBar label="Infra" value={data.infrastructure_score} />
-        <DimensionBar label="Sosek" value={data.socioeconomic_score} />
+        <DimensionBar label="Iklim" value={data.climate_score} tooltip="Kondisi Lingkungan (Suhu, Vegetasi, dll)" />
+        <DimensionBar label="Infra" value={data.infrastructure_score} tooltip="Infrastruktur (Kerapatan Bangunan, Jalan, dll)" />
+        <DimensionBar label="Sosek" value={data.socioeconomic_score} tooltip="Sosial Ekonomi (Kepadatan Penduduk, Aktivitas, dll)" />
       </div>
     </button>
   );
 }
 
-function DimensionBar({ label, value }: { label: string; value: number }) {
+function DimensionBar({ label, value, tooltip }: { label: string; value: number; tooltip?: string }) {
   const color = getZoneColor(value);
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-text-tertiary w-8 font-medium">{label}</span>
+      <div className="relative flex items-center group">
+        <span 
+          className={`text-xs text-text-tertiary w-8 font-medium ${tooltip ? 'cursor-help decoration-dotted underline decoration-text-tertiary/50 underline-offset-2' : ''}`}
+        >
+          {label}
+        </span>
+        {tooltip && (
+          <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block w-40 z-50 pointer-events-none">
+            <div className="bg-gray-800 text-white text-[10px] rounded py-1 px-1.5 shadow-lg leading-relaxed whitespace-normal text-left font-normal normal-case">
+              {tooltip}
+              <div className="absolute -bottom-1 left-3 w-2 h-2 bg-gray-800 transform rotate-45"></div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-200"
