@@ -56,6 +56,12 @@
 | **BNPB GIS Disaster History** | Histori kejadian bencana |
 | **Riskesdas** | Indeks kesehatan per kelurahan |
 
+## Data Access and Reproducibility
+
+This repo does not ship raw data. Place source files in `data/raw/` and follow
+[data/README.md](data/README.md) for expected file names and minimal schema. The
+notebooks in `notebooks/` generate processed datasets in `data/processed/`.
+
 ---
 
 ## 📋 Prerequisites
@@ -130,6 +136,8 @@ cd frontend && npm test -- --run
 ```
 sigap/
 ├── docs/                  # Product docs (PRD, API, Schema, etc.)
+├── data/                  # Raw and processed datasets (see data/README.md)
+├── notebooks/             # EDA, feature engineering, model comparison, insights
 ├── backend/
 │   ├── app/
 │   │   ├── main.py        # FastAPI entry point
@@ -156,6 +164,17 @@ sigap/
 ├── Makefile
 └── .env.example
 ```
+
+---
+
+## Notebooks
+
+Datathon artifacts live in `notebooks/`
+
+- `01_eda_bmkg_bps.ipynb`: distribusi, missing values, korelasi, outlier
+- `02_feature_engineering.ipynb`: USS dimensions construction
+- `03_model_comparison.ipynb`: XGBoost vs LightGBM vs RandomForest, metrics table
+- `04_insights_findings.ipynb`: kelurahan paling rentan, faktor dominan
 
 ---
 
@@ -187,6 +206,32 @@ where:
 - 🟢 **Hijau (USS 0–39)**: Aman, tidak ada aksi darurat
 - 🟡 **Kuning (USS 40–69)**: Waspada, rekomendasikan inspeksi rutin
 - 🔴 **Merah (USS 70–100)**: Darurat, aksi segera diperlukan
+
+## Model Evaluation Results
+
+Isi tabel di bawah dari output `notebooks/03_model_comparison.ipynb`. Sertakan
+confusion matrix, ROC curve, dan feature importance di notebook.
+
+| Model | RMSE | AUC-ROC | Train Time |
+| --- | --- | --- | --- |
+| XGBoost | TBD | TBD | TBD |
+| LightGBM | TBD | TBD | TBD |
+| RandomForest | TBD | TBD | TBD |
+
+Feature importance top 5 (best model):
+1. TBD
+2. TBD
+3. TBD
+4. TBD
+5. TBD
+
+## Key Data Insights
+
+Ringkasan temuan utama dari `notebooks/04_insights_findings.ipynb`.
+
+- TBD
+- TBD
+- TBD
 
 ---
 
