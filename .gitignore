@@ -49,13 +49,5 @@ coverage/
 *.pyc
 .env.production
 
-# MLflow
-mlruns/
-**/mlruns/
-
-# Data
-data/raw/*.csv
-data/processed/*.csv
-
-# Outputs
-output/
+# Ignore heavy MLflow artifacts (the actual 50 .pkl files) but keep the metrics/logs for Juri
+**/mlruns/**/artifacts/*

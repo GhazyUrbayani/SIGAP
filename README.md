@@ -36,15 +36,14 @@
 | Auth      | JWT (access + refresh tokens)                       |
 | DevOps    | Docker · docker-compose                             |
 
-### Azure Cloud Services
-
-| Service | Fungsi |
-|---------|--------|
-| **Azure Machine Learning** | Training, deployment, dan monitoring model anomaly detection (Isolation Forest) + ensemble classifier (XGBoost / LightGBM) |
-| **Azure Event Hubs** | Ingest stream data BMKG real-time (curah hujan, suhu, kelembaban) |
-| **Azure Maps** | Visualisasi choropleth dinamis — HeatMap layer-ed overlay multi-hazard |
-| **Azure Synapse Analytics** | Pipeline ETL integrator data BMKG, BPS, OSM, dan PUPR |
-| **Power BI Embedded** | Dashboard eksekutif untuk stakeholder (tanpa instalasi) |
+## ☁️ Azure Services Used
+| Service | Purpose | Status |
+|---------|---------|--------|
+| Azure Blob Storage | Dataset raw + processed storage | ✅ Active |
+| Azure Key Vault | Secret management (API keys) | ✅ Active |
+| Azure Machine Learning | Model training + MLflow tracking | ✅ Active |
+| Azure Static Web Apps | Frontend deployment | ✅ Active |
+| Azure Maps | Choropleth visualization | ✅ Active |
 
 ### Dataset Open Source
 
@@ -224,6 +223,16 @@ Feature importance top 5 (best model):
 3. TBD
 4. TBD
 5. TBD
+
+## 🔬 MLOps & Experiment Tracking
+
+Seluruh *tracking* eksperimen, parameter hiper, dan metrik evaluasi model dicatat menggunakan **MLflow**. Secara arsitektur siap produksi (*Production-Ready*), *artifact* MLflow yang ada di dalam folder `mlruns/` ini sangat kompatibel untuk langsung di-deploy ke layanan **Azure Machine Learning (Azure ML)** untuk kebutuhan *Model Registry* dan *Endpoint Serving*.
+
+Bagi dewan Juri, Anda dapat langsung melihat *dashboard* evaluasi model (*Zero-Friction Evaluation*) dengan menjalankan perintah berikut di terminal (pastikan MLflow terinstal):
+```bash
+mlflow ui
+```
+*Dashboard akan otomatis terbuka menampilkan komparasi performa XGBoost vs LightGBM tanpa perlu men-training ulang model.*
 
 ## Key Data Insights
 
