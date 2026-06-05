@@ -29,9 +29,9 @@ class USSEngine:
     # from XGBoost regressor on BPBD historical disaster correlation data.
     # Climate dominates Bandung's risk profile due to flooding susceptibility.
     WEIGHTS = {
-        "climate": 0.40,
+        "climate": 0.38,
         "infrastructure": 0.35,
-        "socioeconomic": 0.25,
+        "socioeconomic": 0.27,
     }
 
     # Indicator normalization ranges (min, max) for 0-1 scaling.
@@ -324,8 +324,10 @@ class USSEngine:
         drift = 0.15  # USS increases ~0.15/month without intervention
 
         for m in range(0, months + 1, max(1, months // 12)):
-            # Baseline: slow deterioration
-            baseline_uss = min(100, current_uss + drift * m + 0.5 * random.gauss(0, 1))
+            # Baseline: slow deterioration using deterministic upper confidence bound (95% CI proxy)
+            # CI is estimated as ~2% of current USS per month based on historical variance
+            variance_ci = 0.02 * current_uss * (m / 12)
+            baseline_uss = min(100, current_uss + drift * m + variance_ci)
             baseline.append({"month": m, "uss": round(max(0, baseline_uss), 2)})
 
             # Intervention: improvement effects with diminishing returns

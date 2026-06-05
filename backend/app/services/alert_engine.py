@@ -39,12 +39,10 @@ ALERT_TEMPLATES = {
         "koordinasikan dengan BPBD dalam 48 jam."
     ),
     "emergency": (
-        "🔴 DARURAT — Kelurahan {nama} memasuki zona MERAH dengan USS {uss}/100. "
-        "Risiko cascading failure terdeteksi: {top_dim_label} ({top_score}/100) "
-        "berpotensi memicu degradasi lintas dimensi. "
-        "Tindakan segera: 1) Aktifkan posko tanggap darurat, "
-        "2) Kerahkan tim inspeksi ke RW prioritas, "
-        "3) Siapkan laporan eskalasi ke Kepala Daerah. Batas waktu: 24 jam."
+        "🔴 DARURAT — Kelurahan {nama} masuk ZONA MERAH karena anomali "
+        "{top_dim_label} +{anomaly_pct}% dari baseline. "
+        "3 titik drainase kritis di RW prioritas. "
+        "Rekomendasi: inspeksi fisik dalam 48 jam."
     ),
 }
 

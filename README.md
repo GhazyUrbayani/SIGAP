@@ -175,6 +175,17 @@ Datathon artifacts live in `notebooks/`
 - `03_model_comparison.ipynb`: XGBoost vs LightGBM vs RandomForest, metrics table
 - `04_insights_findings.ipynb`: kelurahan paling rentan, faktor dominan
 
+## How to Reproduce Results
+Untuk memverifikasi klaim performa model (LightGBM AUC-ROC = 0.91) secara independen, dewan juri dapat mengikuti langkah-langkah berikut:
+1. Pastikan Anda berada di virtual environment yang sudah menginstal `requirements.txt`.
+2. Jalankan notebook dari urutan awal ke akhir:
+   ```bash
+   jupyter notebook notebooks/01_eda_bmkg_bps.ipynb
+   jupyter notebook notebooks/02_feature_engineering.ipynb
+   jupyter notebook notebooks/03_model_comparison.ipynb
+   ```
+3. Hasil akhir dan *metric table* dapat dilihat pada cell terbawah di `03_model_comparison.ipynb`. Model terbaik beserta *artefact*-nya akan tersimpan di dalam folder `mlruns/` maupun `backend/app/ml/artifacts/`.
+
 ---
 
 ## 🏙️ USS Engine Details
