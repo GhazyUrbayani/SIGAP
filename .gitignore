@@ -48,3 +48,14 @@ coverage/
 # Alembic
 *.pyc
 .env.production
+
+# MLflow
+mlruns/
+**/mlruns/
+
+# Data
+data/raw/*.csv
+data/processed/*.csv
+
+# Outputs
+output/
